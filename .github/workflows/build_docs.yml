@@ -1,0 +1,148 @@
+name: Build documentation
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_call:
+  workflow_dispatch:
+
+env:
+  DEB_PYTHON_INSTALL_LAYOUT: deb_system
+  DISPLAY: ":99.0"
+  CI: 1
+
+jobs:
+
+  build-main:
+    runs-on: ubuntu-24.04
+    container: ghcr.io/fenics/dolfinx/lab:nightly
+    env:
+      PUBLISH_DIR: ./_build
+      PYVISTA_OFF_SCREEN: false
+      PYVISTA_JUPYTER_BACKEND: "html"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install ".[docs]"
+
+      - name: Build docs
+        run: jupyter book build -W --keep-going . --path-output ${{ env.PUBLISH_DIR }}
+
+      - name: Remove _build directory
+        run: mv ${{ env.PUBLISH_DIR }}/_build/html/* ${{ env.PUBLISH_DIR }}/
+
+      - name: Upload artifact
+        # Use the standard upload-artifact action
+        uses: actions/upload-artifact@v4
+        with:
+          # Give it a unique name
+          name: pages-main
+          # This path contains the root site (e.g., /index.html)
+          path:  ${{ env.PUBLISH_DIR }}
+
+  build-versions:
+    needs: build-main
+    runs-on: ubuntu-24.04
+    container: ${{ matrix.container }}
+    
+    env:
+      PUBLISH_DIR: ./_build
+      PYVISTA_OFF_SCREEN: false
+      PYVISTA_JUPYTER_BACKEND: "html"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - container: ghcr.io/fenics/dolfinx/lab:v0.9.0
+            ref: "v0.1.0"
+          - container: ghcr.io/fenics/dolfinx/lab:v0.10.0
+            ref: "v0.2.0"
+          
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ matrix.ref }}
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install ".[docs]"
+
+      - name: Build docs
+        run: jupyter book build -W --keep-going . --path-output ${{ env.PUBLISH_DIR }}/${{ matrix.ref }}
+
+      - name: Remove _build directory
+        run: mv ${{ env.PUBLISH_DIR }}/${{ matrix.ref }}/_build/html/* ${{ env.PUBLISH_DIR }}/${{ matrix.ref }}/
+        
+
+      - name: Upload artifact
+        # Use the standard upload-artifact action
+        uses: actions/upload-artifact@v4
+        with:
+          # Give each matrix job's artifact a unique name
+          name: pages-${{ matrix.ref }}
+          # Uploading the parent _build directory preserves the
+          # subdirectory structure (e.g., /v0.1.0/index.html)
+          path:  ${{ env.PUBLISH_DIR }}
+
+
+  combine-artifacts:
+    name: Combine Artifacts
+    # This job runs after all builds are complete
+    needs: [build-main, build-versions]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Create download directory
+        run: mkdir ./downloads
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          # This downloads all artifacts into subdirectories
+          # e.g., ./downloads/pages-main, ./downloads/pages-v0.1.0
+          path: ./downloads
+
+      - name: Check downloaded contents
+        run: |
+          echo "Downloaded contents:"
+          ls -R ./downloads
+
+      - name: Create final artifact directory
+        run: mkdir ./pages-artifact
+
+      - name: Move main docs to root
+        # Move contents of 'pages-main' to the root
+        # shopt -s dotglob ensures hidden files (like .nojekyll) are moved
+        run: |
+          shopt -s dotglob
+          mv ./downloads/pages-main/* ./pages-artifact/
+          
+      - name: Move versioned docs to subdirectories
+        # Find all other 'pages-v*' directories and move their contents
+        # (which is the versioned folder itself) into the root.
+        run: |
+          shopt -s dotglob
+          for dir in ./downloads/pages-v*; do
+            # Move the contents of the download dir (e.g., the 'v0.1.0' folder)
+            # into the final artifact directory
+            mv "$dir"/v* ./pages-artifact/
+          done
+
+      - name: Check final directory contents
+        run: |
+          echo "Final artifact contents:"
+          ls -R ./pages-artifact
+
+      - name: Upload final pages artifact
+        # This is the *only* job that uploads the special 'github-pages'
+        # artifact, which 'deploy-pages' will look for.
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./pages-artifact

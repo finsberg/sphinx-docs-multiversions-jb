@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "package"
+version = "0.1.0"
+description = "Dummy package for testing."
+authors = [{name = "Henrik Finsberg", email = "henriknf@simula.no"}]
+license = {text = "MIT"}
+requires-python = ">=3.10"
+dependencies = []
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown"
+
+
+[project.optional-dependencies]
+docs = [
+   "jupytext",
+   "jupyter",
+   "pyvista[all]>=0.45.0",
+   "vtk>=9.5.0",
+   "trame-vuetify",
+   "ipywidgets",
+   "sphinxcontrib-bibtex",
+   "sphinx-codeautolink",
+   "jupyter-book<2.0",
+]

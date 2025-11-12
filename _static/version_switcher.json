@@ -1,0 +1,17 @@
+[   
+    {
+        "name": "Version: development",
+        "version": "0.3.0.dev0",
+        "url": "https://finsberg.github.io/sphinx-docs-multiversions-jb"
+    }, 
+    {
+        "name": "Version: 0.2.0",
+        "version": "0.2.0",
+        "url": "https://finsberg.github.io/sphinx-docs-multiversions-jb/v0.2.0/"
+    },
+    {
+        "name": "Version: 0.1.0",
+        "version": "0.1.0",
+        "url": "https://finsberg.github.io/sphinx-docs-multiversions-jb/v0.1.0/"
+    }
+]

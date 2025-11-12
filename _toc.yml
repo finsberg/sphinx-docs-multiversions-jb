@@ -1,0 +1,10 @@
+format: jb-book
+root: README
+
+parts:
+  - caption: About
+    chapters:
+    - file: "docs/about.md"
+  - caption: Demo
+    chapters:
+      - file: "docs/demo.py"
