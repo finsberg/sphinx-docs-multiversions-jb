@@ -37,7 +37,7 @@ sphinx:
       primary_sidebar_end: ["version-switcher"]
       switcher:
         json_url: "https://raw.githubusercontent.com/finsberg/sphinx-docs-multiversions-jb/refs/heads/main/_static/version_switcher.json"
-        version_match: "0.1.0"
+        version_match: "0.2.0"
       show_version_warning_banner: True
     # bibtex_bibfiles: ["docs/refs.bib"]
     nb_execution_show_tb: True
